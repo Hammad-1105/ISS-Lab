@@ -1,0 +1,122 @@
+#include<iostream>
+#include<string>
+#include<cctype>
+using namespace std;
+
+// Function to remove duplicates from key
+string removeDuplicates(string key) {
+    string result = "";
+    for (char ch : key) {
+        if (result.find(ch) == string::npos)
+            result += ch;
+    }
+    return result;
+}
+
+// Function to create Playfair matrix
+void createMatrix(string key, char matrix[5][5]) {
+    key = removeDuplicates(key);
+    string alphabet = "ABCDEFGHIKLMNOPQRSTUVWXYZ"; // 'J' is omitted
+    int k = 0;
+    
+    // Add key characters to the matrix first
+    for (char ch : key) {
+        matrix[k / 5][k % 5] = ch;
+        k++;
+    }
+
+    // Fill the remaining spots in the matrix with the rest of the alphabet
+    for (char ch : alphabet) {
+        if (key.find(ch) == string::npos) {
+            matrix[k / 5][k % 5] = ch;
+            k++;
+        }
+    }
+}
+
+// Function to preprocess the plaintext into digraphs
+string preprocessPlaintext(string plaintext) {
+    string result = "";
+    for (int i = 0; i < plaintext.length(); i++) {
+        if (isalpha(plaintext[i])) {
+            result += toupper(plaintext[i]);
+        }
+    }
+    
+    // Handle double letters and odd length
+    for (int i = 0; i < result.length() - 1; i++) {
+        if (result[i] == result[i + 1]) {
+            result.insert(i + 1, "X");
+        }
+    }
+    
+    // Add 'X' if odd length
+    if (result.length() % 2 != 0) {
+        result += 'X';
+    }
+    return result;
+}
+
+// Function to find position of a character in the matrix
+pair<int, int> findPosition(char matrix[5][5], char ch) {
+    for (int i = 0; i < 5; i++) {
+        for (int j = 0; j < 5; j++) {
+            if (matrix[i][j] == ch)
+                return {i, j};
+        }
+    }
+    return {-1, -1};
+}
+
+// Function to encrypt the plaintext
+string encrypt(string plaintext, char matrix[5][5]) {
+    string ciphertext = "";
+    for (int i = 0; i < plaintext.length(); i += 2) {
+        char first = plaintext[i];
+        char second = plaintext[i + 1];
+
+        pair<int, int> pos1 = findPosition(matrix, first);
+        pair<int, int> pos2 = findPosition(matrix, second);
+
+        // Same row
+        if (pos1.first == pos2.first) {
+            ciphertext += matrix[pos1.first][(pos1.second + 1) % 5];
+            ciphertext += matrix[pos2.first][(pos2.second + 1) % 5];
+        }
+        // Same column
+        else if (pos1.second == pos2.second) {
+            ciphertext += matrix[(pos1.first + 1) % 5][pos1.second];
+            ciphertext += matrix[(pos2.first + 1) % 5][pos2.second];
+        }
+        // Rectangle case
+        else {
+            ciphertext += matrix[pos1.first][pos2.second];
+            ciphertext += matrix[pos2.first][pos1.second];
+        }
+    }
+    return ciphertext;
+}
+
+// Main function
+int main() {
+    string key, plaintext;
+    
+    // Input key and plaintext
+    cout << "Enter the key: ";
+    cin >> key;
+    cout << "Enter the plaintext: ";
+    cin >> plaintext;
+
+    // Convert plaintext into digraphs
+    plaintext = preprocessPlaintext(plaintext);
+    
+    // Create Playfair matrix
+    char matrix[5][5];
+    createMatrix(key, matrix);
+
+    // Encrypt the plaintext
+    string ciphertext = encrypt(plaintext, matrix);
+    cout << "Encrypted Text: " << ciphertext << endl;
+
+    return 0;
+}

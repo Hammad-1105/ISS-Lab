@@ -1,0 +1,81 @@
+#include <iostream>
+#include <vector>
+using namespace std;
+
+// Function to calculate modulo inverse of a number
+int modInverse(int a, int m) {
+    a = a % m;
+    for (int x = 1; x < m; x++) {
+        if ((a * x) % m == 1)
+            return x;
+    }
+    return -1;
+}
+
+// Function to find determinant modulo 26
+int determinantMod26(vector<vector<int>> &matrix) {
+    return ((matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0]) % 26 + 26) % 26;
+}
+
+// Function to calculate inverse matrix modulo 26
+vector<vector<int>> inverseMatrix(vector<vector<int>> &matrix) {
+    int det = determinantMod26(matrix);
+    int invDet = modInverse(det, 26);
+
+    if (invDet == -1) {
+        cout << "Key matrix is not invertible modulo 26!" << endl;
+        exit(0);
+    }
+
+    vector<vector<int>> invMatrix(2, vector<int>(2));
+    invMatrix[0][0] = matrix[1][1] * invDet % 26;
+    invMatrix[0][1] = -matrix[0][1] * invDet % 26 + 26;
+    invMatrix[1][0] = -matrix[1][0] * invDet % 26 + 26;
+    invMatrix[1][1] = matrix[0][0] * invDet % 26;
+
+    return invMatrix;
+}
+
+// Function to encrypt or decrypt text
+string hillCipher(string text, vector<vector<int>> keyMatrix, bool encrypt) {
+    if (!encrypt) {
+        keyMatrix = inverseMatrix(keyMatrix);
+    }
+
+    string result = "";
+    for (int i = 0; i < text.length(); i += 2) {
+        vector<int> block(2);
+        block[0] = text[i] - 'A';
+        block[1] = text[i + 1] - 'A';
+
+        vector<int> encryptedBlock(2);
+        encryptedBlock[0] = (keyMatrix[0][0] * block[0] + keyMatrix[0][1] * block[1]) % 26;
+        encryptedBlock[1] = (keyMatrix[1][0] * block[0] + keyMatrix[1][1] * block[1]) % 26;
+
+        result += encryptedBlock[0] + 'A';
+        result += encryptedBlock[1] + 'A';
+    }
+
+    return result;
+}
+
+int main() {
+    string text;
+    char choice;
+    vector<vector<int>> keyMatrix = {{6, 24}, {1, 13}}; // Example 2x2 key matrix
+
+    cout << "Enter the text (uppercase only, even length): ";
+    cin >> text;
+    cout << "Encrypt or Decrypt? (E/D): ";
+    cin >> choice;
+
+    bool encrypt = (choice == 'E' || choice == 'e');
+    string result = hillCipher(text, keyMatrix, encrypt);
+
+    if (encrypt)
+        cout << "Encrypted Text: " << result << endl;
+    else
+        cout << "Decrypted Text: " << result << endl;
+
+    return 0;
+}
